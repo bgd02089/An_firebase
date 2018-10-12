@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "181643004285",
+    "firebase_url": "https://caps-e24bb.firebaseio.com",
+    "project_id": "caps-e24bb",
+    "storage_bucket": "caps-e24bb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181643004285:android:fc77c2d7139543e8",
+        "android_client_info": {
+          "package_name": "an_firebase.example.com.an_firebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "181643004285-fia1gp2drtsetjm35i2sdk3tkuvjpulf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBo6nGkpWsPKTmrrtSwwg60uD0UTsAr2ZE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
