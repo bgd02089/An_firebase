@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "181643004285",
-    "firebase_url": "https://caps-e24bb.firebaseio.com",
-    "project_id": "caps-e24bb",
+    "firebase_url": "gs://an-firebase.appspot.com",
+    "project_id": "an-firebase",
     "storage_bucket": "caps-e24bb.appspot.com"
   },
   "client": [
@@ -21,7 +21,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBo6nGkpWsPKTmrrtSwwg60uD0UTsAr2ZE"
+          "current_key": "AIzaSyApqYCU2AA5OjhddGTiGRPVuV4SVROVKgk"
         }
       ],
       "services": {
