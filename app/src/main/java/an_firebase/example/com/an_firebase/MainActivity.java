@@ -23,6 +23,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
@@ -42,6 +43,9 @@ public class MainActivity extends Activity {
     private ImageView imageView;
     private EditText edtFileName;
 
+    String email = "bgd02089@gmail.com";
+    String password = "bgd02089";
+
     private Button btChoose;
     private Button btUpload;
     private Button btDownload;
@@ -55,12 +59,14 @@ public class MainActivity extends Activity {
 
     private Uri filePath;
     ProgressDialog progressDialog;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mAuth = FirebaseAuth.getInstance();
         btChoose = (Button) findViewById(R.id.bt_choose);
         btUpload = (Button) findViewById(R.id.bt_upload);
         btDownload = (Button) findViewById(R.id.bt_download);
@@ -86,8 +92,8 @@ public class MainActivity extends Activity {
 
         btCheck.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                //업로드
-                sendSignInLinkToEmail();
+                //로그인
+                signInWithEmailAndPassword();
             }
         });
         btUpload.setOnClickListener(new View.OnClickListener() {
@@ -100,10 +106,42 @@ public class MainActivity extends Activity {
         btDownload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //업로드
+                //다운로드
                 downloadFile();
             }
         });
+    }
+
+    public void signInWithEmailAndPassword() {
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Toast.makeText(MainActivity.this, "Authentication Success..",
+                                    Toast.LENGTH_SHORT).show();
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            //updateUI(user);
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w(TAG, "signInWithEmail:failure", task.getException());
+                            Toast.makeText(MainActivity.this, "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                            //updateUI(null);
+                        }
+                        // [START_EXCLUDE]
+                        if (!task.isSuccessful()) {
+                            Toast.makeText(MainActivity.this, "AAuthentication failedd.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private void signOut() {
+        mAuth.signOut();
+        //updateUI(null);
     }
 
     //결과 처리
@@ -124,37 +162,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void sendSignInLinkToEmail()
-    {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        Intent intent = getIntent();
-        String emailLink = intent.getData().toString();
-
-    // Confirm the link is a sign-in with email link.
-        if (auth.isSignInWithEmailLink(emailLink)) {
-            // Retrieve this from wherever you stored it
-            String email = "bgd02089@gmail.com";
-
-            // The client SDK will parse the code from the link for you.
-            auth.signInWithEmailLink(email, emailLink)
-                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<AuthResult> task) {
-                            if (task.isSuccessful()) {
-                                Log.d(TAG, "Successfully signed in with email link!");
-                                AuthResult result = task.getResult();
-                                // You can access the new user via result.getUser()
-                                // Additional user info profile *not* available via:
-                                // result.getAdditionalUserInfo().getProfile() == null
-                                // You can check if the user is new or existing:
-                                // result.getAdditionalUserInfo().isNewUser()
-                            } else {
-                                Log.e(TAG, "Error signing in with email link", task.getException());
-                            }
-                        }
-                    });
-        }
-    }
     //upload the file
     private void uploadFile() {
         //업로드할 파일이 있으면 수행
@@ -249,13 +256,5 @@ public class MainActivity extends Activity {
             Toast.makeText(MainActivity.this, "Upload file before downloading", Toast.LENGTH_LONG).show();
         }
 
-       /* private boolean validateInputFileName (String fileName){
-            if (TextUtils.isEmpty(fileName)) {
-                Toast.makeText(MainActivity.this, "Enter file name!", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-            return true;
-            }
-        */
     }
 }
