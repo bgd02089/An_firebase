@@ -1,5 +1,6 @@
 package an_firebase.example.com.an_firebase;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -14,7 +15,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -39,23 +39,12 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
 
-    private TextView tvFileName;
-    private ImageView imageView;
-    private EditText edtFileName;
-
+    String FileName;
+    EditText EditName;
     String email = "bgd02089@gmail.com";
     String password = "bgd02089";
 
-    private Button btChoose;
-    private Button btUpload;
-    private Button btDownload;
-    private Button btCheck;
     private ImageView ivPreview;
-
-    private Uri fileUri;
-    private Bitmap bitmap;
-    private StorageReference imageReference;
-    private StorageReference fileRef;
 
     private Uri filePath;
     ProgressDialog progressDialog;
@@ -67,14 +56,14 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         mAuth = FirebaseAuth.getInstance();
-        btChoose = (Button) findViewById(R.id.bt_choose);
-        btUpload = (Button) findViewById(R.id.bt_upload);
-        btDownload = (Button) findViewById(R.id.bt_download);
-        btCheck = (Button) findViewById(R.id.bt_check);
+        Button btChoose = (Button) findViewById(R.id.bt_choose);
+        Button btUpload = (Button) findViewById(R.id.bt_upload);
+        Button btDownload = (Button) findViewById(R.id.bt_download);
+        Button btCheck = (Button) findViewById(R.id.bt_check);
         ivPreview = (ImageView) findViewById(R.id.iv_preview);
-
-        imageReference = FirebaseStorage.getInstance().getReference().child("images");
-        fileRef = null;
+        EditName = (EditText) findViewById(R.id.txt_filename);
+        StorageReference imageReference = FirebaseStorage.getInstance().getReference().child("images");
+        StorageReference fileRef = null;
         progressDialog = new ProgressDialog(this);
 
         //버튼 클릭 이벤트
@@ -162,6 +151,8 @@ public class MainActivity extends Activity {
         }
     }
 
+    FirebaseStorage storage = FirebaseStorage.getInstance();
+
     //upload the file
     private void uploadFile() {
         //업로드할 파일이 있으면 수행
@@ -171,11 +162,8 @@ public class MainActivity extends Activity {
             progressDialog.setTitle("업로드중...");
             progressDialog.show();
 
-            //storage
-            FirebaseStorage storage = FirebaseStorage.getInstance();
-
             //Unique한 파일명을 만들자.
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMHH_mmss");
+            @SuppressLint("SimpleDateFormat") SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMHH_mmss");
             Date now = new Date();
             String filename = formatter.format(now) + ".png";
             //storage 주소와 폴더 파일명을 지정해 준다.
@@ -214,46 +202,47 @@ public class MainActivity extends Activity {
         }
     }
 
-    StorageReference mStorageRef;  //mStorageRef was previously used to transfer data.
+    //StorageReference mStorageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com");  //mStorageRef was previously used to transfer data.
 
     private void downloadFile() {
-        if (filePath != null) {
-            progressDialog.setTitle("Downloading...");
-            progressDialog.setMessage(null);
-            progressDialog.show();
+        FileName = EditName.getText().toString();
+        StorageReference mStorageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("images/" + FileName);
+        Toast.makeText(MainActivity.this, "Filename : "+FileName, Toast.LENGTH_LONG).show();
+       // File fileNameOnDevice = new File("images/"+FileName);
 
-            final long ONE_MEGABYTE = 1024 * 1024;
-            try {
-                final File localFile = File.createTempFile("images", "jpg");
+        progressDialog.setTitle("Downloading...");
+        progressDialog.setMessage(null);
+        progressDialog.show();
 
-                mStorageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                    @Override
-                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                        Bitmap bmp = BitmapFactory.decodeFile(localFile.getAbsolutePath());
-                        ivPreview.setImageBitmap(bmp);
-                        progressDialog.dismiss();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception exception) {
-                        progressDialog.dismiss();
-                        Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                }).addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
-                    @Override
-                    public void onProgress(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                        // progress percentage
-                        double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+        final long ONE_MEGABYTE = 1024 * 1024;
+        try {
+            final File localFile = File.createTempFile("images", "jpeg");
 
-                        // percentage in progress dialog
-                        progressDialog.setMessage("Downloaded " + ((int) progress) + "%...");
-                    }
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            Toast.makeText(MainActivity.this, "Upload file before downloading", Toast.LENGTH_LONG).show();
+            mStorageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    Bitmap bmp = BitmapFactory.decodeFile(localFile.getAbsolutePath());
+                    ivPreview.setImageBitmap(bmp);
+                    progressDialog.dismiss();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+                    progressDialog.dismiss();
+                    Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }).addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
+                @Override
+                public void onProgress(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    // progress percentage
+                    double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+
+                    // percentage in progress dialog
+                    progressDialog.setMessage("Downloaded " + ((int) progress) + "%...");
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }
