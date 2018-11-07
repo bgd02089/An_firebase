@@ -15,7 +15,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.MediaController;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -45,6 +47,8 @@ public class MainActivity extends Activity {
     String password = "bgd02089";
 
     private ImageView ivPreview;
+    private VideoView vvPreview;
+    private int imageIndex;
 
     private Uri filePath;
     ProgressDialog progressDialog;
@@ -61,8 +65,11 @@ public class MainActivity extends Activity {
         Button btDownload = (Button) findViewById(R.id.bt_download);
         Button btCheck = (Button) findViewById(R.id.bt_check);
         ivPreview = (ImageView) findViewById(R.id.iv_preview);
+        vvPreview = (VideoView) findViewById(R.id.vv_preview);
+
         EditName = (EditText) findViewById(R.id.txt_filename);
-        StorageReference imageReference = FirebaseStorage.getInstance().getReference().child("images");
+        final StorageReference imageReference = FirebaseStorage.getInstance().getReference().child("images");
+
         StorageReference fileRef = null;
         progressDialog = new ProgressDialog(this);
 
@@ -73,9 +80,15 @@ public class MainActivity extends Activity {
             public void onClick(View view) {
                 //이미지를 선택
                 Intent intent = new Intent();
-                intent.setType("image/*");
+                intent.setType("image/*"); // image/*
                 intent.setAction(Intent.ACTION_GET_CONTENT);
                 startActivityForResult(Intent.createChooser(intent, "이미지를 선택하세요."), 0);
+                //imageIndex = 0;
+
+                if (intent.getType() == "mp4")
+                    imageIndex = 1;
+                else
+                    imageIndex = 0;
             }
         });
 
@@ -108,7 +121,7 @@ public class MainActivity extends Activity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
-                            Toast.makeText(MainActivity.this, "Authentication Success..",
+                            Toast.makeText(MainActivity.this, "Authentication Success.",
                                     Toast.LENGTH_SHORT).show();
                             FirebaseUser user = mAuth.getCurrentUser();
                             //updateUI(user);
@@ -139,111 +152,186 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         //request코드가 0이고 OK를 선택했고 data에 뭔가가 들어 있다면
         if (requestCode == 0 && resultCode == RESULT_OK) {
-            filePath = data.getData();
-            Log.d(TAG, "uri:" + String.valueOf(filePath));
-            try {
-                //Uri 파일을 Bitmap으로 만들어서 ImageView에 집어 넣는다.
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), filePath);
-                ivPreview.setImageBitmap(bitmap);
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (imageIndex == 0) {
+                ivPreview.setVisibility(View.VISIBLE);
+                vvPreview.setVisibility(View.INVISIBLE);
+
+                filePath = data.getData();
+                Log.d(TAG, "uri:" + String.valueOf(filePath));
+                try {
+                    //Uri 파일을 Bitmap으로 만들어서 ImageView에 집어 넣는다.
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), filePath);
+                    ivPreview.setImageBitmap(bitmap);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                ivPreview.setVisibility(View.INVISIBLE);
+                vvPreview.setVisibility(View.VISIBLE);
+
+                vvPreview = (VideoView)findViewById(R.id.vv_preview);
+                MediaController mediaController = new MediaController(this);
+                mediaController.setAnchorView(vvPreview);
+                vvPreview.setVideoPath(String.valueOf(filePath));
+                vvPreview.setMediaController(mediaController);
+                vvPreview.start();
             }
         }
     }
 
+
     FirebaseStorage storage = FirebaseStorage.getInstance();
 
-    //upload the file
-    private void uploadFile() {
-        //업로드할 파일이 있으면 수행
-        if (filePath != null) {
-            //업로드 진행 Dialog 보이기
-            final ProgressDialog progressDialog = new ProgressDialog(this);
-            progressDialog.setTitle("업로드중...");
-            progressDialog.show();
+            //upload the file
+            private void uploadFile() {
+                String filename;
+                StorageReference storageRef = null;
 
-            //Unique한 파일명을 만들자.
-            @SuppressLint("SimpleDateFormat") SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMHH_mmss");
-            Date now = new Date();
-            String filename = formatter.format(now) + ".png";
-            //storage 주소와 폴더 파일명을 지정해 준다.
-            StorageReference storageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("images/" + filename);
-            //올라가거라...
+                //업로드할 파일이 있으면 수행
+                if (filePath != null) {
+                    //업로드 진행 Dialog 보이기
+                    final ProgressDialog progressDialog = new ProgressDialog(this);
+                    progressDialog.setTitle("업로드중...");
+                    progressDialog.show();
 
-            storageRef.putFile(filePath)
-                    //성공시
-                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            progressDialog.dismiss(); //업로드 진행 Dialog 상자 닫기
-                            Toast.makeText(getApplicationContext(), "업로드 완료!", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    //실패시
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            progressDialog.dismiss();
-                            Toast.makeText(getApplicationContext(), "업로드 실패!", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    //진행중
-                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                        @Override
-                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                            @SuppressWarnings("VisibleForTests") //이걸 넣어 줘야 아랫줄에 에러가 사라진다. 넌 누구냐?
-                                    double progress = (100 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-                            //dialog에 진행률을 퍼센트로 출력해 준다
-                            progressDialog.setMessage("Uploaded " + ((int) progress) + "% ...");
-                        }
-                    });
-        } else {
-            Toast.makeText(getApplicationContext(), "파일을 먼저 선택하세요.", Toast.LENGTH_SHORT).show();
-        }
+                    //Unique한 파일명을 만들자.
+                    @SuppressLint("SimpleDateFormat") SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMHH_mmss");
+                    Date now = new Date();
+
+                    /*filename = formatter.format(now);
+                    if(filename.contains("IMG"))
+                        imageIndex = 0;
+                    else
+                        imageIndex = 1;
+                    */
+                    //if (imageIndex == 0) {
+                        filename = formatter.format(now) + ".png";
+                        storageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("images/" + filename);
+                    //} else
+                    //    filename = formatter.format(now) + ".mp4";
+                    //storageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("videos/" + filename);
+
+                    storageRef.putFile(filePath)
+                        //성공시
+                        .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                                progressDialog.dismiss(); //업로드 진행 Dialog 상자 닫기
+                                Toast.makeText(getApplicationContext(), "업로드 완료!", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        //실패시
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                progressDialog.dismiss();
+                                Toast.makeText(getApplicationContext(), "업로드 실패!", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        //진행중
+                        .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                            @Override
+                            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                                @SuppressWarnings("VisibleForTests") //이걸 넣어 줘야 아랫줄에 에러가 사라진다. 넌 누구냐?
+                                        double progress = (100 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                                //dialog에 진행률을 퍼센트로 출력해 준다
+                                progressDialog.setMessage("Uploaded " + ((int) progress) + "% ...");
+                            }
+                        });
+            } else {
+                    Toast.makeText(getApplicationContext(), "파일을 먼저 선택하세요.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+
+            private void downloadFile() {
+                vvPreview.setVisibility(View.INVISIBLE);
+                ivPreview.setVisibility(View.INVISIBLE);
+
+                FileName = EditName.getText().toString();
+
+                if(FileName.contains("mp4"))
+                    imageIndex = 1;
+                else
+                    imageIndex = 0;
+
+                StorageReference mStorageRef;
+
+                if (imageIndex == 0) {
+                    mStorageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("images/" + FileName);
+                } else {
+                    mStorageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("videos/" + FileName);
+                }
+                Toast.makeText(MainActivity.this, "Filename : " + FileName, Toast.LENGTH_LONG).show();
+
+                progressDialog.setTitle("Downloading...");
+                progressDialog.setMessage(null);
+                progressDialog.show();
+
+                if (imageIndex == 0) {
+                    final long ONE_MEGABYTE = 1024 * 1024;
+                    try {
+                        final File localFile = File.createTempFile("images", "jpeg");
+
+                        mStorageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                                ivPreview.setVisibility(View.VISIBLE);
+                                Bitmap bmp = BitmapFactory.decodeFile(localFile.getAbsolutePath());
+                                ivPreview.setImageBitmap(bmp);
+                                progressDialog.dismiss();
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception exception) {
+                                progressDialog.dismiss();
+                                Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_LONG).show();
+                            }
+                        }).addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
+                            @Override
+                            public void onProgress(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                                // progress percentage
+                                double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+
+                                // percentage in progress dialog
+                                progressDialog.setMessage("Downloaded " + ((int) progress) + "%...");
+                            }
+                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    final long ONE_MEGABYTE = 1024 * 1024;
+                    try {
+                        final File localFile = File.createTempFile("videos", "mp4");
+
+                        mStorageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                                vvPreview.setVisibility(View.VISIBLE);
+                                vvPreview.setVideoPath(String.valueOf(localFile));
+                                vvPreview.start();
+                                progressDialog.dismiss();
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception exception) {
+                                progressDialog.dismiss();
+                                Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_LONG).show();
+                            }
+                        }).addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
+                            @Override
+                            public void onProgress(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                                // progress percentage
+                                double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+
+                                // percentage in progress dialog
+                                progressDialog.setMessage("Downloaded " + ((int) progress) + "%...");
+                            }
+                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
     }
-
-    //StorageReference mStorageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com");  //mStorageRef was previously used to transfer data.
-
-    private void downloadFile() {
-        FileName = EditName.getText().toString();
-        StorageReference mStorageRef = storage.getReferenceFromUrl("gs://an-firebase.appspot.com").child("images/" + FileName);
-        Toast.makeText(MainActivity.this, "Filename : "+FileName, Toast.LENGTH_LONG).show();
-       // File fileNameOnDevice = new File("images/"+FileName);
-
-        progressDialog.setTitle("Downloading...");
-        progressDialog.setMessage(null);
-        progressDialog.show();
-
-        final long ONE_MEGABYTE = 1024 * 1024;
-        try {
-            final File localFile = File.createTempFile("images", "jpeg");
-
-            mStorageRef.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                @Override
-                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                    Bitmap bmp = BitmapFactory.decodeFile(localFile.getAbsolutePath());
-                    ivPreview.setImageBitmap(bmp);
-                    progressDialog.dismiss();
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception exception) {
-                    progressDialog.dismiss();
-                    Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            }).addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
-                @Override
-                public void onProgress(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                    // progress percentage
-                    double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-
-                    // percentage in progress dialog
-                    progressDialog.setMessage("Downloaded " + ((int) progress) + "%...");
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-}

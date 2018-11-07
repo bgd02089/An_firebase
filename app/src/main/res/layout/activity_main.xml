@@ -1,29 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="an_firebase.example.com.an_firebase.MainActivity">
 
     <Button
         android:id="@+id/bt_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:gravity="center"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:text="CHECK FIREBASE STORAGE ON"
-        />
+        android:text="CHECK FIREBASE STORAGE ON" />
 
     <TextView
-        android:layout_gravity="center_horizontal"
-        android:gravity="center"
-        android:layout_margin="16dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello Storage!" ></TextView>>
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="16dp"
+        android:gravity="center"
+        android:text="Hello Storage!"></TextView>>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -44,37 +42,44 @@
             android:layout_weight="2"
             android:hint="File Name"
             android:inputType="text" />
-    </LinearLayout>>
+    </LinearLayout>
+    >
 
-        <Button
-            android:id="@+id/bt_download"
-            android:text="Download"
-            android:layout_gravity="center_horizontal"
-            android:gravity="center_horizontal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/bt_download"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center_horizontal"
+        android:text="Download" />
 
     <LinearLayout
-        android:gravity="center_horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal">
 
         <Button
             android:id="@+id/bt_choose"
-            android:text="Choose"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" ></Button>>
+            android:layout_height="wrap_content"
+            android:text="Choose"></Button>>
 
         <Button
             android:id="@+id/bt_upload"
-            android:text="Upload"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" ></Button>
+            android:layout_height="wrap_content"
+            android:text="Upload"></Button>
     </LinearLayout>
 
     <!--이미지 출력-->
     <ImageView
         android:id="@+id/iv_preview"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" ></ImageView>
+        android:layout_height="wrap_content"></ImageView>
+
+    <VideoView
+        android:id="@+id/vv_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"></VideoView>
+
 </LinearLayout>
